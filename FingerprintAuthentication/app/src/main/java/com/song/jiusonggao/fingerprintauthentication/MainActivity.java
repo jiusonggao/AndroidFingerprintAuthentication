@@ -17,6 +17,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final String TAG = "MainActivity";
     private static int RESULT_LOAD_IMAGE = 100;
     private Button mFingerprintBtn;
+    private Button mMinutiaeBtn;
     private ImageView mOriginalFingerprint;
     private String mImagePath;
     @Override
@@ -32,6 +33,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // Button for loading Fingerprints
         mFingerprintBtn = (Button) findViewById(R.id.btn_load_fp);
         mFingerprintBtn.setOnClickListener(this);
+        // Button for extracting minutiae
+        mMinutiaeBtn = (Button) findViewById(R.id.button_minutiae);
+        mMinutiaeBtn.setOnClickListener(this);
         // Original Fingerprint image
         mOriginalFingerprint = (ImageView) findViewById(R.id.original_image);
     }
@@ -41,6 +45,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()){
             case R.id.btn_load_fp:
                 loadFingerprintFromGallery();
+                break;
+            case R.id.button_minutiae:
+                // extract minutiae from fingerprint image
                 break;
             default:
                 break;

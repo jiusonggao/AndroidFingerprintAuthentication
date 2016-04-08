@@ -7,6 +7,6 @@ import android.os.Build;
  */
 public class Utilily {
     public static boolean shouldAskPermission(){
-        return(Build.VERSION.SDK_INT>Build.VERSION_CODES.LOLLIPOP_MR1);
+        return(Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1);
     }
 }
