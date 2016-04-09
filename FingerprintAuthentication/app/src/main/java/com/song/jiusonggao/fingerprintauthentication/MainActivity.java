@@ -3,7 +3,9 @@ package com.song.jiusonggao.fingerprintauthentication;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
@@ -19,6 +21,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mFingerprintBtn;
     private Button mMinutiaeBtn;
     private ImageView mOriginalFingerprint;
+    private ImageView mMinutiaeImage;
     private String mImagePath;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +41,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mMinutiaeBtn.setOnClickListener(this);
         // Original Fingerprint image
         mOriginalFingerprint = (ImageView) findViewById(R.id.original_image);
+        // Minutiae image
+        mMinutiaeImage = (ImageView) findViewById(R.id.minutiae_image);
     }
 
     @Override
@@ -48,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.button_minutiae:
                 // extract minutiae from fingerprint image
+                extractMinutiae(mImagePath);
                 break;
             default:
                 break;
@@ -59,8 +65,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Intent i = new Intent(
                 Intent.ACTION_PICK,
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-
         startActivityForResult(i, RESULT_LOAD_IMAGE);
+    }
+
+    private void extractMinutiae(String fingerprintPath) {
+        if(fingerprintPath == null) {
+            Log.e(TAG, "no fingerprint image selected");
+        } else {
+            FingerPrint fingerPrint = new FingerPrint(fingerprintPath);
+            fingerPrint.setColors(Color.BLACK, Color.WHITE);
+            fingerPrint.binarizeLocalMean();
+            Bitmap bitmap = fingerPrint.toBitmap();
+            mMinutiaeImage.setImageBitmap(bitmap);
+        }
     }
 
     @Override
@@ -102,7 +119,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             default:
                 break;
         }
-
     }
 
     private void requestReadExternalStoragePermission() {
