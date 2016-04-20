@@ -74,12 +74,16 @@ public class FingerPrint
 		try 
 		{
 			// Read file
-//			originalImage = ImageIO.read(new File(filename));
 			originalImage = BitmapFactory.decodeFile(filename);
-			
+			// Copper the image if needed.
+			if(originalImage.getHeight() > originalImage.getWidth()) {
+				Bitmap coppedBitmap = Bitmap.createBitmap(originalImage, 0, 160, originalImage.getWidth(), originalImage.getWidth());
+				originalImage = coppedBitmap;
+			}
 			// Create the binary picture
 			width = originalImage.getWidth();
 			height = originalImage.getHeight();
+
 			
 			greyMap = new int [width][height];
 			binMap = new boolean [width][height];

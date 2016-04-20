@@ -28,21 +28,55 @@
         android:layout_alignParentEnd="true" />
 
     <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_below="@+id/btn_load_fp"
-        android:layout_centerHorizontal="true">
+        android:id="@+id/linearLayout">
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/original_image" />
+            android:id="@+id/original_image"
+            android:src="@android:drawable/ic_menu_camera"/>
 
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/minutiae_image" />
+            android:id="@+id/binary_image"
+            android:src="@android:drawable/ic_menu_camera"/>
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/skeleton_image"
+            android:src="@android:drawable/ic_menu_camera"/>
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/direction_image"
+            android:src="@android:drawable/ic_menu_camera"/>
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/core_image"
+            android:src="@android:drawable/ic_menu_camera"/>
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/minutiae_image"
+            android:src="@android:drawable/ic_menu_camera"/>
 
     </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Work Progress"
+        android:id="@+id/textView_progress"
+        android:layout_below="@+id/btn_load_fp"
+        android:layout_centerHorizontal="true" />
 
 </RelativeLayout>

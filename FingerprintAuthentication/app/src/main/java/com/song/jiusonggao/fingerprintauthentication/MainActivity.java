@@ -1,12 +1,15 @@
 package com.song.jiusonggao.fingerprintauthentication;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -14,15 +17,34 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
+
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
     private static final String TAG = "MainActivity";
     private static int RESULT_LOAD_IMAGE = 100;
     private Button mFingerprintBtn;
     private Button mMinutiaeBtn;
+    private TextView mProgressTextView;
     private ImageView mOriginalFingerprint;
+    private ImageView mBinaryImage;
+    private ImageView mSkeletonImage;
+    private ImageView mDirectionImage;
+    private ImageView mCoreImage;
     private ImageView mMinutiaeImage;
+    private ProgressDialog mProgressDialog;
+
     private String mImagePath;
+    private FingerPrint mFingerPrint;
+    private FingerPrint.direction[][] dirMatrix;
+    private Point core;
+    private int coreRadius;
+    private ArrayList<Point> intersections;
+    private ArrayList<Point> endPoints;
+
+    private MinutiaeExtractionTask minutiaeExtractionTask;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "onCreate");
@@ -39,10 +61,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // Button for extracting minutiae
         mMinutiaeBtn = (Button) findViewById(R.id.button_minutiae);
         mMinutiaeBtn.setOnClickListener(this);
+        // Progress text view
+        mProgressTextView = (TextView) findViewById(R.id.textView_progress);
         // Original Fingerprint image
         mOriginalFingerprint = (ImageView) findViewById(R.id.original_image);
+        // Binary image
+        mBinaryImage = (ImageView) findViewById(R.id.binary_image);
+        // Skeleton image
+        mSkeletonImage = (ImageView) findViewById(R.id.skeleton_image);
+        // Direction image
+        mDirectionImage = (ImageView) findViewById(R.id.direction_image);
+        // Core image
+        mCoreImage = (ImageView) findViewById(R.id.core_image);
         // Minutiae image
         mMinutiaeImage = (ImageView) findViewById(R.id.minutiae_image);
+        // Progress dialog
+        mProgressDialog = new ProgressDialog(this);
     }
 
     @Override
@@ -52,11 +86,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 loadFingerprintFromGallery();
                 break;
             case R.id.button_minutiae:
-                // extract minutiae from fingerprint image
-                extractMinutiae(mImagePath);
+                mProgressDialog.setTitle("Loading");
+                mProgressDialog.setMessage("Start minutiae extraction...");
+                mProgressDialog.show();
+                extractMinutiae();
                 break;
             default:
                 break;
+        }
+    }
+
+    private void extractMinutiae(){
+        if(mImagePath == null) {
+            return;
+        } else {
+            if(minutiaeExtractionTask != null) {
+                minutiaeExtractionTask.cancel(true);
+                minutiaeExtractionTask = null;
+            }
+            minutiaeExtractionTask = new MinutiaeExtractionTask();
+            minutiaeExtractionTask.execute(mImagePath);
         }
     }
 
@@ -66,18 +115,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Intent.ACTION_PICK,
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(i, RESULT_LOAD_IMAGE);
-    }
-
-    private void extractMinutiae(String fingerprintPath) {
-        if(fingerprintPath == null) {
-            Log.e(TAG, "no fingerprint image selected");
-        } else {
-            FingerPrint fingerPrint = new FingerPrint(fingerprintPath);
-            fingerPrint.setColors(Color.BLACK, Color.WHITE);
-            fingerPrint.binarizeLocalMean();
-            Bitmap bitmap = fingerPrint.toBitmap();
-            mMinutiaeImage.setImageBitmap(bitmap);
-        }
     }
 
     @Override
@@ -113,7 +150,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if(readAcceptted){
                     mOriginalFingerprint.setImageBitmap(BitmapFactory.decodeFile(mImagePath));
                 } else {
-                    //
+                    // Permission request denied, nothing to do.
                 }
                 break;
             default:
@@ -121,10 +158,67 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    /**
+     * Request read external storage permission for app to load images from gallery.
+     */
     private void requestReadExternalStoragePermission() {
-        Log.i(TAG, "requestReadExternalStoragePermission");
         String[] perms = {"android.permission.READ_EXTERNAL_STORAGE"};
         int permsRequestCode = 200;
         requestPermissions(perms, permsRequestCode);
+    }
+
+    /**
+     * A task to extract minutiaes from a fingerprint image.
+     */
+    private class MinutiaeExtractionTask extends AsyncTask<String, String, Boolean> {
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            String path = params[0];
+            mFingerPrint = new FingerPrint(path);
+            // Binary local
+            publishProgress("Compute Binary");
+            mFingerPrint.setColors(Color.BLACK, Color.GREEN);
+            mFingerPrint.binarizeLocalMean();
+            // Remove noise
+            publishProgress("Remove noise");
+            mFingerPrint.addBorders(1);
+            mFingerPrint.removeNoise();
+            mFingerPrint.removeNoise();
+            mFingerPrint.removeNoise();
+            // Skeletonization
+            publishProgress("Skeletonization");
+            mFingerPrint.skeletonize();
+            // Direction
+            publishProgress("Calculate direction");
+            dirMatrix = mFingerPrint.getDirections();
+            // Core
+            publishProgress("Calculate core...");
+            core = mFingerPrint.getCore(dirMatrix);
+            // Minutiae
+            publishProgress("Extract minutiae");
+            intersections = mFingerPrint.getMinutiaeIntersections(core, coreRadius);
+            endPoints = mFingerPrint.getMinutiaeEndpoints(core, coreRadius);
+            return true;
+        }
+
+        @Override
+        protected void onProgressUpdate(String... progress) {
+            mProgressDialog.setMessage(progress[0]);
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            mProgressDialog.dismiss();
+            if(result) {
+                mProgressTextView.setText("success");
+            } else {
+                mProgressTextView.setText("fail");
+            }
+            // display results.
+            Bitmap skeletonBitmap = mFingerPrint.toBitmap();
+            mSkeletonImage.setImageBitmap(skeletonBitmap);
+            mDirectionImage.setImageBitmap(mFingerPrint.directionToBufferedImage(dirMatrix));
+        }
     }
 }
